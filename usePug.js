@@ -1,27 +1,6 @@
 var pug = require('pug');
 var fs = require('fs-extra');
-
-var args = [{
-    lang: 'en',
-    phase: 'game'
-}, {
-    lang: 'es',
-    phase: 'game'
-}, {
-    lang: 'pt',
-    phase: 'game'
-}, {
-    lang: 'zh-hans',
-    phase: 'game'
-}];
-
-var defs = {
-    fileName: '#{dirname}/spt-#{phase}-#{lang}.tps',
-    textureFileName: 'out/#{lang}/spt-#{phase}-{n}-{v}.png',
-    DataFile: 'out/#{lang}/spt-#{phase}-{v}.json',
-    fileListCommon: 'in/#{phase}/common',
-    fileListLang: 'in/#{phase}/#{lang}'
-};
+var path = require('path');
 
 var templates = {
     slots: 'cgs-slots-settings.pug'
@@ -29,38 +8,45 @@ var templates = {
 
 var languages = ['en', 'es', 'pt', 'zh-hans'];
 
-var spriteSheets = ['game'];
+var quality = ['hi', 'low'];
+
+var spriteSheetNames = ['game', 'preloader', 'bonus'];
 
 function genTP() {
-    var compiledFunction = pug.compileFile(__dirname + '/templates/slots/' + templates.slots);
-
-  // spriteSheets.forEach(function(el, i, arr){
-  //   var phase = el;
-  //   languages.forEach(function(lang){
-  //     var data = {
-  //       dirname: __dirname,
-  //       phase: phase,
-  //       lang: lang
-  //     };
-  //     // writeFile(compiledFunction({
-  //     //   fileName: pug.render(defs.fileName, data),
-  //     //   textureFileName : pug.render(defs.textureFileName, data,
-  //     //   DataFile: pug.render(defs.DataFile, data),
-  //     //   fileListCommon: pug.render(defs.fileListCommon, data),
-  //     //   fileListLang: pug.render(defs.fileListLang, data);
-  //     // }).toString();
-  //     // }));
-  //     console.log(prepareData(data));
-  //
-  //   });
-}
+    var compiledFunction = pug.compileFile(path.join(__dirname, '/templates/slots/' + templates.slots));
+    spriteSheetNames.forEach(function (spriteSheetName) {
+        languages.forEach(function (lang) {
+            var data = {
+                dirname: __dirname,
+                phase: spriteSheetName,
+                lang: lang
+            };
+            var fileName = `spt-${data.phase}-${data.lang}.tps`;
+            writeFile(path.join(__dirname + '/test', fileName),
+             compiledFunction(prepareData(data)));
+        });
+    });
+};
 
 function prepareData(data) {
-    console.log(data);
+    var obj = {};
+    // ES6 Template strings ahead
+    var defs = {
+        fileName: `${data.dirname}/spt-${data.phase}-${data.lang}.tps`,
+        textureFileName: `out/${data.lang}/spt-${data.phase}-{n}-{v}.png`,
+        DataFile: `out/${data.lang}/spt-${data.phase}-{v}.json`,
+        fileListCommon: `in/${data.phase}/common`,
+        fileListLang: `in/${data.phase}/${data.lang}`
+    };
+    Object.keys(defs).forEach(function (def) {
+        obj[def] = defs[def];
+    });
+
+    return obj;
 }
 
-function writeFile(content) {
-    fs.writeFile(defs.fileName, content);
+function writeFile(path, content) {
+    fs.writeFile(path, content);
 }
 
 function clean() {
